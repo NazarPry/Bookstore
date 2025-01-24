@@ -1,0 +1,11 @@
+name: RDS Push
+on:
+  push:
+    paths:
+      - '/frontend/**'
+jobs:
+  build: 
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Text
+        run: echo "Success"
