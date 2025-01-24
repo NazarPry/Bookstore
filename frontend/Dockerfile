@@ -19,5 +19,5 @@ COPY . /app/
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8002"]
 
-EXPOSE 8002
+EXPOSE 8002 
 
