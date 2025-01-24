@@ -2,7 +2,7 @@ name: RDS Push
 on:
   push:
     paths:
-      - '/frontend/**'
+      - 'frontend/**'
 jobs:
   build: 
     runs-on: ubuntu-22.04
