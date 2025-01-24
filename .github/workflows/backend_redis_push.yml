@@ -2,7 +2,7 @@ name: RDS Push
 on:
   push:
     paths:
-      - 'backend_rds/**'
+      - 'backend_redis/**'
 jobs:
   build: 
     runs-on: ubuntu-22.04
