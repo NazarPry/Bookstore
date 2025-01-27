@@ -7,5 +7,57 @@ jobs:
   build: 
     runs-on: ubuntu-22.04
     steps:
-      - name: Text
-        run: echo "Success"
+      - name: Get code
+        uses: actions/checkout@v4
+
+      - name: AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build, tag and push RDS
+        env: 
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: backend_rds
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend_rds
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      
+      - name: Deploy to EC2
+        env: 
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          GIT_SHA: ${{ github.sha }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EC2_HOST: ${{ vars.EC2_HOST }}
+        run: | 
+            echo "$SSH_PRIVATE_KEY" > private_key.pem
+            chmod 600 private_key.pem
+
+            ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST << EOF
+              export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+              export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+              export AWS_REGION=${AWS_REGION}
+              export ECR_REGISTRY=${ECR_REGISTRY}
+              export GIT_SHA=${GIT_SHA}
+
+              aws ecr get-login-password --region "$AWS_REGION" \
+                | docker login --username AWS --password-stdin $"ECR_REGISTRY"
+
+              
+              
+              yq e '.services.backendrds.image = strenv(ECR_REGISTRY)+"backend_rds:"+strenv(GIT_SHA)' -i docker-compose.yml
+
+              docker compose down
+              docker compose up -d
+            EOF
+            
