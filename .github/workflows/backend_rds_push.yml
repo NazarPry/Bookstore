@@ -53,8 +53,7 @@ jobs:
               aws ecr get-login-password --region "$AWS_REGION" \
                 | docker login --username AWS --password-stdin $"ECR_REGISTRY"
 
-              docker rmi -f 529088265450.dkr.ecr.us-east-1.amazonaws.com/backend_rds
-              
+                          
               yq e '.services.backendrds.image = strenv(ECR_REGISTRY)+"/backend_rds:"+strenv(GIT_SHA)' -i docker-compose.yml
 
               docker compose down
