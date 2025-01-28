@@ -58,6 +58,6 @@ jobs:
 
               yq e '.services.backendredis.image = strenv(ECR_REGISTRY)+"/backend_redis:"+strenv(GIT_SHA)' -i docker-compose.yml
 
-              docker compose down
+              
               docker compose up -d
             EOF
